@@ -59,13 +59,13 @@ if A_IsCompiled ;Gdy skrypt jest skompilowany to zawsze jest wersją oficjalną
 
 ;Następne zmienne są nadpisywane gdy wersja oficjalna = 1!
 global blokada = 1 ;Czy wciśnięcie klawisza na klawiaturze ma przerywać program
-global pasekPostepu = 1 ;Czy ma być wyświetlany pasek postępu
+global pasekPostepu = 0 ;Czy ma być wyświetlany pasek postępu
 global przerobWszystkieReordy = 0 ;Czy ma pracować na wszystkich rekordach. Gdy 0 używa liczby rekordów z liczbaRekorkowDoZrobienia
 global sprawdzeniePlikow = 1 ;Czy poprawność danych ma być sprawdzona
 global restartPrzegladarki = 1 ;Czy ma wymuszać otwarcie nowej instancji explorera
-global wylapujPowtorki = 1 ;Czy ma pomijać rekordy, jeżeli odpowiednie wyniki już istnieją
+global wylapujPowtorki = 0 ;Czy ma pomijać rekordy, jeżeli odpowiednie wyniki już istnieją
 
-liczbaRekorkowDoZrobienia = 20 ;Limit rekordów do wykonania - TESTY
+liczbaRekorkowDoZrobienia = 50 ;Limit rekordów do wykonania - TESTY
 
 ;POLE TESTÓW
 
@@ -159,13 +159,22 @@ if sprawdzeniePlikow ;Liczenie liczby linii w plikach WIP zamienić na funkcje
 
 	loop
 	{
-		FileReadLine, bezZnaczenia, vat_number.txt, %A_Index%
+		FileReadLine, numer, vat_number.txt, %A_Index%
 		If ErrorLevel = 1
 		{
 			vat_numberLiczbaLini := A_Index - 1
 			ErrorLevel := 0
 			break
 		}
+		
+		if(StrLen(numer) != 10) ;Sprawdzenie czy NIP ma 10 cyfr
+		{
+			blokada = 0
+			Progress, Off
+			MsgBox, 16, Błąd danych, Conajmniej jeden numer NIP ma nieprawidłową długość.`nMoże to być spowodowane myślnikami między cyframi lub przedrostkiem kraju.
+			ExitApp
+		}
+		
 	}
 	
 	if (nameLiczbaLini = vendorLiczbaLini) ;Porównanie liczby linii w różnych plikach
