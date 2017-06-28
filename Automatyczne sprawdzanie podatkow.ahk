@@ -305,50 +305,6 @@ Loop
 		
 	}
 	
-	wb.Document.getElementById("caption2_b-5").Click() ;Klika guzik "drukuj"
-	
-	WinWait, Drukowanie, ,10 ;Czeka na okno wyboru drukarki !!!WIP po 10 sekundach zwraca błąd i zaczyna od początku sprawdzanie!!!
-	If ErrorLevel ;Jeśli się nie doczeka to zaczyna od początku
-	{
-		ErrorLevel = 0
-		goto, PoczatekSprawdzania
-	}
-	
-	Send, {Enter} ;!!!WIP Przed drukowaniem trzeba upewnić się, że drukuje na właściwej drukarce!!! Wybiera drukarkę taką jak poprzednio
-	WinWait, ahk_exe PDFCreator.exe
-	WinActivate, ahk_exe PDFCreator.exe
-	WinShow, ahk_exe PDFCreator.exe
-	Sleep, 900
-
-	;!!! Trzeba odznaczyć "After saving open output file"!!!! WIP Do testów: rozwiązanie, które zadziała gdy to pole jest zaznaczone
-
-	ControlClick, ThunderRT6TextBox6, ahk_exe PDFCreator.exe ;Wybiera polę na nazwę pliku
-	Sleep, 800
-	Send, ^a ;Zaznacza jego zawartość
-	Send, %nazwa% ;Wpisuje nazwę pliku
-	Sleep, 500
-	;ControlClick, ThunderRT6CommandButton7, ahk_exe PDFCreator.exe ;Zatwierdzenie wydruku
-	Send, {Enter} ;Zatwierdzenie wydruku
-
-	WinWait, Save as ;Okno zapisu pliku
-	WinActivate, Save as
-	WinShow, Save as
-	Sleep, 1000
-
-	SetWorkingDir %A_ScriptDir%\wyniki
-	RMApp_NavControlHandler(A_WorkingDir) ;Zmienia fodler do zapisu na /wyniki
-	SetWorkingDir %A_ScriptDir%
-	
-	Sleep, 3000
-	Send, {Enter} ;Zapis
-	
-	Sleep, 300
-	IfWinExist, Potwierdzanie zapisywania jako ;Wykrywanie czy plik o danej nazwie już istnieje. Jeśli  tak to go nadpisuje
-	{
-		Send, {Tab}
-		Sleep, 300
-		Send, {Enter}
-	}
 	if NIPNieWBazie
 		niePoprawneRaporty := niePoprawneRaporty + 1
 	else
