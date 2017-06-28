@@ -5,6 +5,8 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 
 #SingleInstance Force
 
+;Test Git
+
 IELoad(wb)    ;You need to send the IE handle to the function unless you define it as global.
 {
     If !wb    ;If wb is not a valid pointer then quit
