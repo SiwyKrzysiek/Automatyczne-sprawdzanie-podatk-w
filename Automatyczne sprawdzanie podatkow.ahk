@@ -65,7 +65,7 @@ global sprawdzeniePlikow = 1 ;Czy poprawność danych ma być sprawdzona
 global restartPrzegladarki = 1 ;Czy ma wymuszać otwarcie nowej instancji explorera
 global wylapujPowtorki = 1 ;Czy ma pomijać rekordy, jeżeli odpowiednie wyniki już istnieją
 
-liczbaRekorkowDoZrobienia = 1 ;Limit rekordów do wykonania - TESTY
+liczbaRekorkowDoZrobienia = 20 ;Limit rekordów do wykonania - TESTY
 
 ;POLE TESTÓW
 
@@ -217,7 +217,7 @@ Loop
 {	
 	NIPNieWBazie := 0
 	
-	Sleep, 500 ;Opóźnienia, ponieważ program na pełnej prędkości potrafi działać dziwnie. Prawdopodobny powód - PDF creator! WIP
+	;Sleep, 500 ;Opóźnienia, ponieważ program na pełnej prędkości potrafi działać dziwnie. Prawdopodobny powód - PDF creator! WIP
 	;~ raportyRazem := poprawneRaporty + niePoprawneRaporty
 	
 	;~ if( Mod(raportyRazem, 5) = 0 AND (raportyRazem != 0) ) ;Co 5 wykonanych 25 sekundy pauzy
@@ -322,7 +322,6 @@ Loop
 	
 	;Zapis jako zrzut ekranu
 	Progress, Off
-	Sleep, 1000
 	Run, %A_ScriptDir%\nircmd\nircmd.exe savescreenshotwin `"%A_ScriptDir%\wyniki\%nazwa%.png`"
 	Sleep, 500
 	
@@ -337,9 +336,6 @@ Loop
 		Progress, b w250, %procenty%`%`n%czytanaLinia%`/%liczbaRekorkowDoZrobienia%, Postęp, Pasek postępu
 		Progress, %procenty%
 	}
-	
-	Sleep, 3000
-	
 	
 	czytanaLinia := czytanaLinia + 1
 }
