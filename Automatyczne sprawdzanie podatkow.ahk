@@ -43,6 +43,9 @@ Koniec()		;Funkcja wywoływana gdy użytkownik naciśnie jakiś klawisz na klawi
 
 SprawdzNIP(nip) ;Oblicza sumę kontrolną NIP. Zwraca 1 gdy poprawna i 0 gdy nie poprawna
 {	
+	if (StrLen(nip) != 10)
+		return 0
+	
 	cyfryNIP := [Mod(Floor(nip / 1000000000),10), Mod(Floor(nip / 100000000), 10), Mod(Floor(nip / 10000000), 10), Mod(Floor(nip / 1000000), 10), Mod(Floor(nip / 100000), 10), Mod(Floor(nip / 10000), 10), Mod(Floor(nip / 1000), 10), Mod(Floor(nip / 100), 10), Mod(Floor(nip / 10), 10), Mod(nip, 10)] ;!!! Podział NIP na poszczegulne cyfry WIP do zrobienie pentlą !!!
 	
 	suma := cyfryNIP[1]*6 + cyfryNIP[2]*5 + cyfryNIP[3]*7 + cyfryNIP[4]*2 + cyfryNIP[5]*3 + cyfryNIP[6]*4 + cyfryNIP[7]*5 + cyfryNIP[8]*6 + cyfryNIP[9]*7 ;Oblicza sumę kontroną mnożąc cyfry przzez odpowiedznie wagi
@@ -165,16 +168,7 @@ if sprawdzeniePlikow ;Liczenie liczby linii w plikach WIP zamienić na funkcje
 			vat_numberLiczbaLini := A_Index - 1
 			ErrorLevel := 0
 			break
-		}
-		
-		if(StrLen(numer) != 10) ;Sprawdzenie czy NIP ma 10 cyfr
-		{
-			blokada = 0
-			Progress, Off
-			MsgBox, 16, Błąd danych, Conajmniej jeden numer NIP ma nieprawidłową długość.`nMoże to być spowodowane myślnikami między cyframi lub przedrostkiem kraju.
-			ExitApp
-		}
-		
+		}		
 	}
 	
 	if (nameLiczbaLini = vendorLiczbaLini) ;Porównanie liczby linii w różnych plikach
