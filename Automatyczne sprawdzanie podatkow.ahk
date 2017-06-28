@@ -54,17 +54,17 @@ SprawdzNIP(nip) ;Oblicza sumę kontrolną NIP. Zwraca 1 gdy poprawna i 0 gdy nie
 		return 0
 }
 
-global versjaOficjalna = 1 ;Czy ma pracować jako wersja oficjalna - 1, czy jako wersja do testów - 0
+global versjaOficjalna = 0 ;Czy ma pracować jako wersja oficjalna - 1, czy jako wersja do testów - 0
 if A_IsCompiled ;Gdy skrypt jest skompilowany to zawsze jest wersją oficjalną
 	versjaOficjalna = 1
 
 ;Następne zmienne są nadpisywane gdy wersja oficjalna = 1!
 global blokada = 1 ;Czy wciśnięcie klawisza na klawiaturze ma przerywać program
-global pasekPostepu = 0 ;Czy ma być wyświetlany pasek postępu
+global pasekPostepu = 1 ;Czy ma być wyświetlany pasek postępu
 global przerobWszystkieReordy := 0 ;Czy ma pracować na wszystkich rekordach. Gdy 0 używa liczby rekordów z liczbaRekorkowDoZrobienia
-global sprawdzeniePlikow = 0 ;Czy poprawność danych ma być sprawdzona
+global sprawdzeniePlikow = 1 ;Czy poprawność danych ma być sprawdzona
 
-liczbaRekorkowDoZrobienia := 25 ;Limit rekordów do wykonania - TESTY
+liczbaRekorkowDoZrobienia := 15 ;Limit rekordów do wykonania - TESTY
 
 ;POLE TESTÓW
 
@@ -205,12 +205,12 @@ Loop
 	NIPNieWBazie := 0
 	
 	Sleep, 500 ;Opóźnienia, ponieważ program na pełnej prędkości potrafi działać dziwnie. Prawdopodobny powód - PDF creator! WIP
-	raportyRazem := poprawneRaporty + niePoprawneRaporty
+	;~ raportyRazem := poprawneRaporty + niePoprawneRaporty
 	
-	if( Mod(raportyRazem, 5) = 0 AND (raportyRazem != 0) ) ;Co 5 wykonanych 25 sekundy pauzy
-		Sleep, 25000
-	if( Mod(raportyRazem, 50) = 0 AND (raportyRazem != 0) ) ;Co 50 wykonanych 65 sekun pauzy
-		Sleep, 40000
+	;~ if( Mod(raportyRazem, 5) = 0 AND (raportyRazem != 0) ) ;Co 5 wykonanych 25 sekundy pauzy
+		;~ Sleep, 25000
+	;~ if( Mod(raportyRazem, 50) = 0 AND (raportyRazem != 0) ) ;Co 50 wykonanych 65 sekun pauzy
+		;~ Sleep, 40000
 	
 	
 	if pasekPostepu ;Wyświetlenie paska postępu
@@ -249,7 +249,7 @@ Loop
 		continue
 	}
 	
-	IfExist, %A_ScriptDir%\wyniki\%nazwa%.pdf ;Wyłapuje powtórki. Pzechodzi wtedy do następnej wartości. Działa tylko dla poprawnych plików
+	IfExist, %A_ScriptDir%\wyniki\%nazwa%.png ;Wyłapuje powtórki. Pzechodzi wtedy do następnej wartości. Działa tylko dla poprawnych plików
 	{
 		czytanaLinia := czytanaLinia + 1
 		powrorki := powrorki + 1
@@ -304,6 +304,9 @@ Loop
 		nazwa := "NIE POPRAWNY " . nazwa
 		
 	}
+	
+	Progress, Off
+	Run, %A_ScriptDir%\nircmd\nircmd.exe savescreenshotwin `"%A_ScriptDir%\wyniki\%nazwa%.png`"
 	
 	if NIPNieWBazie
 		niePoprawneRaporty := niePoprawneRaporty + 1
