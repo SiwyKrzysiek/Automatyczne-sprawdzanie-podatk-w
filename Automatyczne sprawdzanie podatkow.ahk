@@ -5,7 +5,6 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 
 #SingleInstance Force
 
-;Test Git
 
 IELoad(wb)    ;You need to send the IE handle to the function unless you define it as global.
 {
@@ -63,13 +62,14 @@ global blokada = 1 ;Czy wciśnięcie klawisza na klawiaturze ma przerywać progr
 global pasekPostepu = 1 ;Czy ma być wyświetlany pasek postępu
 global przerobWszystkieReordy = 0 ;Czy ma pracować na wszystkich rekordach. Gdy 0 używa liczby rekordów z liczbaRekorkowDoZrobienia
 global sprawdzeniePlikow = 1 ;Czy poprawność danych ma być sprawdzona
-global restartPrzegladarki = 0 ;Czy ma wymuszać otwarcie nowej instancji explorera
+global restartPrzegladarki = 1 ;Czy ma wymuszać otwarcie nowej instancji explorera
+global wylapujPowtorki = 1 ;Czy ma pomijać rekordy, jeżeli odpowiednie wyniki już istnieją
 
 liczbaRekorkowDoZrobienia = 1 ;Limit rekordów do wykonania - TESTY
 
 ;POLE TESTÓW
 
-;~ IfExist, %A_ScriptDir%\vat_number.txt
+;~ IfExist, %A_ScriptDir%\vat_number.*
 	;~ MsgBox, Jest OK
 ;~ ExitApp
 
@@ -78,6 +78,7 @@ liczbaRekorkowDoZrobienia = 1 ;Limit rekordów do wykonania - TESTY
 
 if versjaOficjalna ;Dopasownie zmiennych i początkowe czynności gdy versja oficjalna
 {
+	wylapujPowtorki = 1 ;Automatycznie pomija dane jeśli już wcześniej zostały przetworzone
 	blokada = 1 ;Wciśnięcie dowolnego klawisza zatrzymuje działanie programu
 	pasekPostepu = 1 ;Pastek postępu będzie widoczny
 	sprawdzeniePlikow = 1 ;Pliki źródłowe zostaną sprawdzone
@@ -191,9 +192,9 @@ if przerobWszystkieReordy ;Pracuj na całości danych
 	liczbaRekorkowDoZrobienia := vat_numberLiczbaLini ;!!!WIP Na teraz przerabia wszystkie rekordy !!!
 }
 
-IfNotExist, %A_ScriptDir%\wyniki
+IfNotExist, %A_ScriptDir%\wyniki ;Tworzy folder na wyniki jeśli nie istnieje
 {
-	FileCreateDir, wyniki ;Tworzy folder na wyniki jeśli nie istnieje
+	FileCreateDir, wyniki
 	if ErrorLevel
 	{
 		blokada = 0 ;Program nie będzie narzekał na kliknięcie klawiszy
@@ -261,13 +262,15 @@ Loop
 		continue
 	}
 	
-	IfExist, %A_ScriptDir%\wyniki\%nazwa%.png ;Wyłapuje powtórki. Pzechodzi wtedy do następnej wartości. Działa tylko dla poprawnych plików
+	if wylapujPowtorki ;Wyłapuje powtórki. Pzechodzi wtedy do następnej wartości. Działa tylko dla poprawnych plików
 	{
-		czytanaLinia := czytanaLinia + 1
-		powrorki := powrorki + 1
-		continue
+		IfExist, %A_ScriptDir%\wyniki\%nazwa%.png 
+		{
+			czytanaLinia := czytanaLinia + 1
+			powrorki := powrorki + 1
+			continue
+		}
 	}
-
 	
 	PoczatekSprawdzania:
 	IfWinExist, Portal Podatkowy - Internet Explorer ;Gdy przeglądarka nie jest włączona włącza ją
@@ -317,6 +320,7 @@ Loop
 		
 	}
 	
+	;Zapis jako zrzut ekranu
 	Progress, Off
 	Sleep, 1000
 	Run, %A_ScriptDir%\nircmd\nircmd.exe savescreenshotwin `"%A_ScriptDir%\wyniki\%nazwa%.png`"
