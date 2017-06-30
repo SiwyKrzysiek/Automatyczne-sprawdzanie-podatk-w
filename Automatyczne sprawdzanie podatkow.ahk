@@ -62,7 +62,7 @@ if A_IsCompiled ;Gdy skrypt jest skompilowany to zawsze jest wersją oficjalną
 
 ;Następne zmienne są nadpisywane gdy wersja oficjalna = 1!
 global blokada = 1 ;Czy wciśnięcie klawisza na klawiaturze ma przerywać program
-global pasekPostepu = 0 ;Czy ma być wyświetlany pasek postępu
+global pasekPostepu = 1 ;Czy ma być wyświetlany pasek postępu
 global przerobWszystkieReordy = 0 ;Czy ma pracować na wszystkich rekordach. Gdy 0 używa liczby rekordów z liczbaRekorkowDoZrobienia
 global sprawdzeniePlikow = 1 ;Czy poprawność danych ma być sprawdzona
 global restartPrzegladarki = 1 ;Czy ma wymuszać otwarcie nowej instancji explorera
@@ -232,7 +232,7 @@ Loop
 	if pasekPostepu ;Wyświetlenie paska postępu
 	{
 		procenty := Floor(((czytanaLinia -1) / liczbaRekorkowDoZrobienia) * 100)
-		Progress, b w250, %procenty%`%`n%czytanaLinia%`/%liczbaRekorkowDoZrobienia%, Postęp, Pasek postępu ;Tekst na pasku
+		Progress, b w250, % procenty "`%`n" czytanaLinia - 1 "/"  liczbaRekorkowDoZrobienia, Postęp, Pasek postępu ;Tekst na pasku
 		Progress, %procenty% ;Długość zielonego paska
 	}
 	
