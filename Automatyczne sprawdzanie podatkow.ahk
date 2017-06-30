@@ -72,6 +72,8 @@ liczbaRekorkowDoZrobienia = 20 ;Limit rekordów do wykonania - TESTY
 
 ;POLE TESTÓW
 
+;MsgBox, % ComObjCreate("Scripting.FileSystemObject").GetFolder((A_ScriptDir . "\wyniki\poprawne")).Files.Count ;!!! Liczy ile jest plików w folderze. Może się przydać do kontroli czy prpgram działa prawidłowo
+
 ;~ UrlDownloadToFile, https://autohotkey.com/download/1.1/version.txt, C:\AutoHotkey Latest Version.txt
 ;~ URLDownloadToFile, http://www.nirsoft.net/utils/nircmd.zip, "C:\Users\kdi011\Documents\Programowanie\Automatyczne sprawdzanie podatków" nircmd.zip
 ;~ Run, bitsadmin  /transfer mydownloadjob  /download  /priority normal https://autohotkey.com/download/1.1/version.txt  C:\Users\kdi011\Downloads\test.txt
@@ -187,16 +189,17 @@ if sprawdzeniePlikow ;Liczenie liczby linii w plikach WIP zamienić na funkcje
 	{
 		blokada = 0
 		Progress, Off
-		MsgBox, 16, Błąd, Liczba lini w plikach z danymi jest różna! Należy sprawdzić dane`n`nMoże to być spowodowane pustą linią na końcu któregoś z plików
+		MsgBox, 16, Błąd, Liczba lini w plikach z danymi jest różna! Należy sprawdzić dane
 		ExitApp
 	}
 }
 
 if przerobWszystkieReordy ;Pracuj na całości danych
 {
-	liczbaRekorkowDoZrobienia := vat_numberLiczbaLini ;!!!WIP Na teraz przerabia wszystkie rekordy !!!
+	liczbaRekorkowDoZrobienia := vat_numberLiczbaLini ;Przerabia wszystkie rekordy
 }
 
+{ ;Tworzenie folderó na wyniki
 IfNotExist, `"%A_ScriptDir%\wyniki`" ;Tworzy folder na wyniki jeśli nie istnieje
 {
 	FileCreateDir, wyniki
@@ -209,7 +212,7 @@ IfNotExist, `"%A_ScriptDir%\wyniki`" ;Tworzy folder na wyniki jeśli nie istniej
 	}
 }
 
-IfNotExist, `"%A_ScriptDir%\wyniki\poprawne`" ;Tworzy folder na wyniki jeśli nie istnieje
+IfNotExist, `"%A_ScriptDir%\wyniki\poprawne`" ;Tworzy folder na poprawne wyniki jeśli nie istnieje
 {
 	FileCreateDir, %A_ScriptDir%\wyniki\poprawne
 	if ErrorLevel
@@ -221,7 +224,7 @@ IfNotExist, `"%A_ScriptDir%\wyniki\poprawne`" ;Tworzy folder na wyniki jeśli ni
 	}
 }
 
-IfNotExist, `"%A_ScriptDir%\wyniki\nie poprawne`" ;Tworzy folder na wyniki jeśli nie istnieje
+IfNotExist, `"%A_ScriptDir%\wyniki\nie poprawne`" ;Tworzy folder na nie poprawne wyniki jeśli nie istnieje
 {
 	FileCreateDir, %A_ScriptDir%\wyniki\nie poprawne
 	if ErrorLevel
@@ -232,8 +235,9 @@ IfNotExist, `"%A_ScriptDir%\wyniki\nie poprawne`" ;Tworzy folder na wyniki jeśl
 		ExitApp
 	}
 }
+}
 
-IfNotExist, %A_ScriptDir%\nircmd\nircmd.exe ;Gdy nie ma programu do zrzutó ekranu to o tym powiadomi
+IfNotExist, %A_ScriptDir%\nircmd\nircmd.exe ;Gdy nie ma programu do zrzutów ekranu to o tym powiadomi
 {
 	Progress, Off
 	blokada = 0
@@ -254,14 +258,6 @@ Loop
 {	
 	NIPNieWBazie := 0
 	
-	;Sleep, 500 ;Opóźnienia, ponieważ program na pełnej prędkości potrafi działać dziwnie. Prawdopodobny powód - PDF creator! WIP
-	;~ raportyRazem := poprawneRaporty + niePoprawneRaporty
-	
-	;~ if( Mod(raportyRazem, 5) = 0 AND (raportyRazem != 0) ) ;Co 5 wykonanych 25 sekundy pauzy
-		;~ Sleep, 25000
-	;~ if( Mod(raportyRazem, 50) = 0 AND (raportyRazem != 0) ) ;Co 50 wykonanych 65 sekun pauzy
-		;~ Sleep, 40000
-	
 	
 	if pasekPostepu ;Wyświetlenie paska postępu
 	{
@@ -279,10 +275,10 @@ Loop
 		ExitApp
 	}
 	
-	FileReadLine, firmName, name.txt, %czytanaLinia%
+	FileReadLine, firmName, name.txt, %czytanaLinia% ;Czytanie plików
 	FileReadLine, vendor, vendor.txt, %czytanaLinia%
 	FileReadLine, vatNo, vat_number.txt, %czytanaLinia%
-	if ErrorLevel
+	if ErrorLevel ;Gdyby był błąd
 	{
 		blokada = 0 ;Program nie będzie narzekał na kliknięcie klawiszy
 		Progress, Off ;Znika pasek postępu
@@ -291,15 +287,15 @@ Loop
 	}
 	nazwa = %vendor% %firmName% ;Utowrzenie nazwy do podpisywania wyników
 	
-	if wylapujPowtorki ;Wyłapuje powtórki. Pzechodzi wtedy do następnej wartości. Działa tylko dla poprawnych plików
+	if wylapujPowtorki ;Wyłapuje powtórki. Pzechodzi wtedy do następnej wartości.
 	{
-		IfExist, %A_ScriptDir%\wyniki\poprawne\%nazwa%.png
+		IfExist, %A_ScriptDir%\wyniki\poprawne\%nazwa%.png ;Dla poprawncyh
 		{
 			czytanaLinia := czytanaLinia + 1
 			powrorki := powrorki + 1
 			continue
 		}
-		IfExist, %A_ScriptDir%\wyniki\nie poprawne\NIE POPRAWNY %nazwa%.png
+		IfExist, %A_ScriptDir%\wyniki\nie poprawne\NIE POPRAWNY %nazwa%.png ;Dla nie poprawnych
 		{
 			czytanaLinia := czytanaLinia + 1
 			powrorki := powrorki + 1
@@ -315,9 +311,7 @@ Loop
 		continue
 	}
 	
-
 	
-	PoczatekSprawdzania:
 	IfWinExist, Portal Podatkowy - Internet Explorer ;Gdy przeglądarka nie jest włączona włącza ją
 	{
 		wb := IEGet("Portal Podatkowy") 
@@ -359,7 +353,6 @@ Loop
 	
 	if(StrLen(wb.Document.getElementById("caption2_b-3").innertext) != 339) ;Gdyby komunikat był inny niż prawidłowy - Prawidłowy komunikat ma 339 znaków :D Są w nim nowe linie i nie za barzo wiem jak go wpisiać w kod. Rozwiązanie na liczbę znaków działa bardzo dobrze
 	{
-		Sleep, 5000 ;WIP dp przetestowanie bez opóźnieniń
 		NIPNieWBazie := 1
 		nazwa := "NIE POPRAWNY " . nazwa
 		
@@ -367,7 +360,7 @@ Loop
 	
 	;Zapis jako zrzut ekranu
 	Progress, Off
-	if (NIPNieWBazie)
+	if NIPNieWBazie ;Wzależności od wyniku strony jest zapisywany w odpowiednim oflderze
 	{
 		Run, `"%A_ScriptDir%\nircmd\nircmd.exe`" savescreenshotwin `"%A_ScriptDir%\wyniki\nie poprawne\%nazwa%.png`"
 	}
@@ -376,7 +369,7 @@ Loop
 		Run, `"%A_ScriptDir%\nircmd\nircmd.exe`" savescreenshotwin `"%A_ScriptDir%\wyniki\poprawne\%nazwa%.png`"
 	}
 	
-	Sleep, 500
+	Sleep, 500 ;Potrzebne by na zrzucie ekranu nie było paska postępu. Diała już przy 200
 	
 	if NIPNieWBazie
 		niePoprawneRaporty := niePoprawneRaporty + 1
