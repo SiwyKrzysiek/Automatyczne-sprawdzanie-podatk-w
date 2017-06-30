@@ -5,7 +5,7 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 
 #SingleInstance Force
 
-Potega(liczba, wykladnik)
+Potega(liczba, wykladnik) ;Potęguję daną liczbę do naturalnej potęgi
 {
 	wynik := 1
 	
@@ -293,16 +293,20 @@ Loop
 		ExitApp
 	}
 	
-	FileReadLine, firmName, name.txt, %czytanaLinia% ;Czytanie plików
-	FileReadLine, vendor, vendor.txt, %czytanaLinia%
-	FileReadLine, vatNo, vat_number.txt, %czytanaLinia%
-	if ErrorLevel ;Gdyby był błąd
+	try ;Czytanie plików
+	{
+		FileReadLine, firmName, name.txt, %czytanaLinia%
+		FileReadLine, vendor, vendor.txt, %czytanaLinia%
+		FileReadLine, vatNo, vat_number.txt, %czytanaLinia%
+	}
+	catch ;Gdyby był błąd w trakcie czytania
 	{
 		blokada = 0 ;Program nie będzie narzekał na kliknięcie klawiszy
 		Progress, Off ;Znika pasek postępu
 		MsgBox, 16, Błąd, Błąd w trakcie wczytywania danych ;!!! WIP Przetestować jak zachowuje się gdy na końcu pliku jest pusta linia
 		ExitApp
 	}
+
 	nazwa = %vendor% %firmName% ;Utowrzenie nazwy do podpisywania wyników
 	
 	if wylapujPowtorki ;Wyłapuje powtórki. Pzechodzi wtedy do następnej wartości.
