@@ -5,6 +5,17 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 
 #SingleInstance Force
 
+Potega(liczba, wykladnik)
+{
+	wynik := 1
+	
+	Loop %wykladnik%
+	{
+		wynik := wynik * liczba
+	}
+	
+	return wynik
+}
 
 IELoad(wb)    ;You need to send the IE handle to the function unless you define it as global.
 {
@@ -43,13 +54,22 @@ Koniec()		;Funkcja wywoływana gdy użytkownik naciśnie jakiś klawisz na klawi
 
 SprawdzNIP(nip) ;Oblicza sumę kontrolną NIP. Zwraca 1 gdy poprawna i 0 gdy nie poprawna
 {	
-	if (StrLen(nip) != 10)
+	if (StrLen(nip) != 10) ;Gdyby NIP nie miał 10 cyfr to na pewno jest nie prawidłowy
 		return 0
 	
-	cyfryNIP := [Mod(Floor(nip / 1000000000),10), Mod(Floor(nip / 100000000), 10), Mod(Floor(nip / 10000000), 10), Mod(Floor(nip / 1000000), 10), Mod(Floor(nip / 100000), 10), Mod(Floor(nip / 10000), 10), Mod(Floor(nip / 1000), 10), Mod(Floor(nip / 100), 10), Mod(Floor(nip / 10), 10), Mod(nip, 10)] ;!!! Podział NIP na poszczegulne cyfry WIP do zrobienie pentlą !!!
+	cyfryNIP := Object()
+	Loop, 10 ;Dzieli NIP na cyfry
+	{
+		cyfryNIP.Insert(Mod(Floor(nip / Potega(10, (10 - a_index))),10))
+	}
 	
-	suma := cyfryNIP[1]*6 + cyfryNIP[2]*5 + cyfryNIP[3]*7 + cyfryNIP[4]*2 + cyfryNIP[5]*3 + cyfryNIP[6]*4 + cyfryNIP[7]*5 + cyfryNIP[8]*6 + cyfryNIP[9]*7 ;Oblicza sumę kontroną mnożąc cyfry przzez odpowiedznie wagi
-	
+	suma := 0
+	wagi := [6, 5, 7, 2, 3, 4, 5, 6, 7]
+	Loop, 9 ;Oblicza sumę kontroną mnożąc cyfry przzez odpowiedznie wagi
+	{
+		suma := suma + (cyfryNIP[a_index] * wagi[a_index])
+	}
+		
 	if (Mod(suma, 11) = cyfryNIP[10]) ;Sprawdzenei czy (suma cyfr * wagi) mod 11 = ostatnia cyfra
 		return 1
 	else
@@ -62,7 +82,7 @@ if A_IsCompiled ;Gdy skrypt jest skompilowany to zawsze jest wersją oficjalną
 
 ;Następne zmienne są nadpisywane gdy wersja oficjalna = 1!
 global blokada = 1 ;Czy wciśnięcie klawisza na klawiaturze ma przerywać program
-global pasekPostepu = 1 ;Czy ma być wyświetlany pasek postępu
+global pasekPostepu = 0 ;Czy ma być wyświetlany pasek postępu
 global przerobWszystkieReordy = 0 ;Czy ma pracować na wszystkich rekordach. Gdy 0 używa liczby rekordów z liczbaRekorkowDoZrobienia
 global sprawdzeniePlikow = 1 ;Czy poprawność danych ma być sprawdzona
 global restartPrzegladarki = 0 ;Czy ma wymuszać otwarcie nowej instancji explorera
@@ -74,9 +94,7 @@ liczbaRekorkowDoZrobienia = 20 ;Limit rekordów do wykonania - TESTY
 
 ;MsgBox, % ComObjCreate("Scripting.FileSystemObject").GetFolder((A_ScriptDir . "\wyniki\poprawne")).Files.Count ;!!! Liczy ile jest plików w folderze. Może się przydać do kontroli czy prpgram działa prawidłowo
 
-;~ UrlDownloadToFile, https://autohotkey.com/download/1.1/version.txt, C:\AutoHotkey Latest Version.txt
-;~ URLDownloadToFile, http://www.nirsoft.net/utils/nircmd.zip, "C:\Users\kdi011\Documents\Programowanie\Automatyczne sprawdzanie podatków" nircmd.zip
-;~ Run, bitsadmin  /transfer mydownloadjob  /download  /priority normal https://autohotkey.com/download/1.1/version.txt  C:\Users\kdi011\Downloads\test.txt
+;~ MsgBox, % Potega(2, 6)
 
 ;~ ExitApp
 
