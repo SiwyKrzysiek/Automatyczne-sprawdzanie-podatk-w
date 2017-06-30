@@ -65,8 +65,8 @@ global blokada = 1 ;Czy wciśnięcie klawisza na klawiaturze ma przerywać progr
 global pasekPostepu = 1 ;Czy ma być wyświetlany pasek postępu
 global przerobWszystkieReordy = 0 ;Czy ma pracować na wszystkich rekordach. Gdy 0 używa liczby rekordów z liczbaRekorkowDoZrobienia
 global sprawdzeniePlikow = 1 ;Czy poprawność danych ma być sprawdzona
-global restartPrzegladarki = 1 ;Czy ma wymuszać otwarcie nowej instancji explorera
-global wylapujPowtorki = 0 ;Czy ma pomijać rekordy, jeżeli odpowiednie wyniki już istnieją
+global restartPrzegladarki = 0 ;Czy ma wymuszać otwarcie nowej instancji explorera
+global wylapujPowtorki = 1 ;Czy ma pomijać rekordy, jeżeli odpowiednie wyniki już istnieją
 
 liczbaRekorkowDoZrobienia = 20 ;Limit rekordów do wykonania - TESTY
 
@@ -76,7 +76,7 @@ liczbaRekorkowDoZrobienia = 20 ;Limit rekordów do wykonania - TESTY
 ;~ URLDownloadToFile, http://www.nirsoft.net/utils/nircmd.zip, "C:\Users\kdi011\Documents\Programowanie\Automatyczne sprawdzanie podatków" nircmd.zip
 ;~ Run, bitsadmin  /transfer mydownloadjob  /download  /priority normal https://autohotkey.com/download/1.1/version.txt  C:\Users\kdi011\Downloads\test.txt
 
-ExitApp
+;~ ExitApp
 
 
 ;KONIEC POLA TESTÓW
@@ -197,9 +197,33 @@ if przerobWszystkieReordy ;Pracuj na całości danych
 	liczbaRekorkowDoZrobienia := vat_numberLiczbaLini ;!!!WIP Na teraz przerabia wszystkie rekordy !!!
 }
 
-IfNotExist, %A_ScriptDir%\wyniki ;Tworzy folder na wyniki jeśli nie istnieje
+IfNotExist, `"%A_ScriptDir%\wyniki`" ;Tworzy folder na wyniki jeśli nie istnieje
 {
 	FileCreateDir, wyniki
+	if ErrorLevel
+	{
+		blokada = 0 ;Program nie będzie narzekał na kliknięcie klawiszy
+		Progress, Off ;Znika pasek postępu
+		MsgBox, 16, Błąd, Nie udało się utworzyć folderu na wyniki
+		ExitApp
+	}
+}
+
+IfNotExist, `"%A_ScriptDir%\wyniki\poprawne`" ;Tworzy folder na wyniki jeśli nie istnieje
+{
+	FileCreateDir, %A_ScriptDir%\wyniki\poprawne
+	if ErrorLevel
+	{
+		blokada = 0 ;Program nie będzie narzekał na kliknięcie klawiszy
+		Progress, Off ;Znika pasek postępu
+		MsgBox, 16, Błąd, Nie udało się utworzyć folderu na wyniki
+		ExitApp
+	}
+}
+
+IfNotExist, `"%A_ScriptDir%\wyniki\nie poprawne`" ;Tworzy folder na wyniki jeśli nie istnieje
+{
+	FileCreateDir, %A_ScriptDir%\wyniki\nie poprawne
 	if ErrorLevel
 	{
 		blokada = 0 ;Program nie będzie narzekał na kliknięcie klawiszy
@@ -267,6 +291,22 @@ Loop
 	}
 	nazwa = %vendor% %firmName% ;Utowrzenie nazwy do podpisywania wyników
 	
+	if wylapujPowtorki ;Wyłapuje powtórki. Pzechodzi wtedy do następnej wartości. Działa tylko dla poprawnych plików
+	{
+		IfExist, %A_ScriptDir%\wyniki\poprawne\%nazwa%.png
+		{
+			czytanaLinia := czytanaLinia + 1
+			powrorki := powrorki + 1
+			continue
+		}
+		IfExist, %A_ScriptDir%\wyniki\nie poprawne\NIE POPRAWNY %nazwa%.png
+		{
+			czytanaLinia := czytanaLinia + 1
+			powrorki := powrorki + 1
+			continue
+		}
+	}
+	
 	if (!SprawdzNIP(vatNo)) ;Sprawdza czy dany numer NIP jest poprawny
 	{
 		FileAppend,%vatNo%`n ,%A_ScriptDir%\wyniki\BŁĘDNY NIP! %nazwa%.txt ;Jeśli nie jest poprawny to tworzy plik z informacją. WIP Nie dopisywanie do istniejącego pliku jeśli już istnieje
@@ -275,15 +315,7 @@ Loop
 		continue
 	}
 	
-	if wylapujPowtorki ;Wyłapuje powtórki. Pzechodzi wtedy do następnej wartości. Działa tylko dla poprawnych plików
-	{
-		IfExist, %A_ScriptDir%\wyniki\%nazwa%.png 
-		{
-			czytanaLinia := czytanaLinia + 1
-			powrorki := powrorki + 1
-			continue
-		}
-	}
+
 	
 	PoczatekSprawdzania:
 	IfWinExist, Portal Podatkowy - Internet Explorer ;Gdy przeglądarka nie jest włączona włącza ją
@@ -335,7 +367,15 @@ Loop
 	
 	;Zapis jako zrzut ekranu
 	Progress, Off
-	Run, %A_ScriptDir%\nircmd\nircmd.exe savescreenshotwin `"%A_ScriptDir%\wyniki\%nazwa%.png`"
+	if (NIPNieWBazie)
+	{
+		Run, `"%A_ScriptDir%\nircmd\nircmd.exe`" savescreenshotwin `"%A_ScriptDir%\wyniki\nie poprawne\%nazwa%.png`"
+	}
+	else
+	{
+		Run, `"%A_ScriptDir%\nircmd\nircmd.exe`" savescreenshotwin `"%A_ScriptDir%\wyniki\poprawne\%nazwa%.png`"
+	}
+	
 	Sleep, 500
 	
 	if NIPNieWBazie
