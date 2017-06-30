@@ -5,7 +5,6 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 
 #SingleInstance Force
 
-;Test Git
 
 IELoad(wb)    ;You need to send the IE handle to the function unless you define it as global.
 {
@@ -44,6 +43,9 @@ Koniec()		;Funkcja wywoływana gdy użytkownik naciśnie jakiś klawisz na klawi
 
 SprawdzNIP(nip) ;Oblicza sumę kontrolną NIP. Zwraca 1 gdy poprawna i 0 gdy nie poprawna
 {	
+	if (StrLen(nip) != 10)
+		return 0
+	
 	cyfryNIP := [Mod(Floor(nip / 1000000000),10), Mod(Floor(nip / 100000000), 10), Mod(Floor(nip / 10000000), 10), Mod(Floor(nip / 1000000), 10), Mod(Floor(nip / 100000), 10), Mod(Floor(nip / 10000), 10), Mod(Floor(nip / 1000), 10), Mod(Floor(nip / 100), 10), Mod(Floor(nip / 10), 10), Mod(nip, 10)] ;!!! Podział NIP na poszczegulne cyfry WIP do zrobienie pentlą !!!
 	
 	suma := cyfryNIP[1]*6 + cyfryNIP[2]*5 + cyfryNIP[3]*7 + cyfryNIP[4]*2 + cyfryNIP[5]*3 + cyfryNIP[6]*4 + cyfryNIP[7]*5 + cyfryNIP[8]*6 + cyfryNIP[9]*7 ;Oblicza sumę kontroną mnożąc cyfry przzez odpowiedznie wagi
@@ -54,21 +56,23 @@ SprawdzNIP(nip) ;Oblicza sumę kontrolną NIP. Zwraca 1 gdy poprawna i 0 gdy nie
 		return 0
 }
 
-global versjaOficjalna = 1 ;Czy ma pracować jako wersja oficjalna - 1, czy jako wersja do testów - 0
+global versjaOficjalna = 0 ;Czy ma pracować jako wersja oficjalna - 1, czy jako wersja do testów - 0
 if A_IsCompiled ;Gdy skrypt jest skompilowany to zawsze jest wersją oficjalną
 	versjaOficjalna = 1
 
 ;Następne zmienne są nadpisywane gdy wersja oficjalna = 1!
 global blokada = 1 ;Czy wciśnięcie klawisza na klawiaturze ma przerywać program
 global pasekPostepu = 0 ;Czy ma być wyświetlany pasek postępu
-global przerobWszystkieReordy := 0 ;Czy ma pracować na wszystkich rekordach. Gdy 0 używa liczby rekordów z liczbaRekorkowDoZrobienia
-global sprawdzeniePlikow = 0 ;Czy poprawność danych ma być sprawdzona
+global przerobWszystkieReordy = 0 ;Czy ma pracować na wszystkich rekordach. Gdy 0 używa liczby rekordów z liczbaRekorkowDoZrobienia
+global sprawdzeniePlikow = 1 ;Czy poprawność danych ma być sprawdzona
+global restartPrzegladarki = 1 ;Czy ma wymuszać otwarcie nowej instancji explorera
+global wylapujPowtorki = 0 ;Czy ma pomijać rekordy, jeżeli odpowiednie wyniki już istnieją
 
-liczbaRekorkowDoZrobienia := 25 ;Limit rekordów do wykonania - TESTY
+liczbaRekorkowDoZrobienia = 50 ;Limit rekordów do wykonania - TESTY
 
 ;POLE TESTÓW
 
-;~ IfExist, %A_ScriptDir%\vat_number.txt
+;~ IfExist, %A_ScriptDir%\vat_number.*
 	;~ MsgBox, Jest OK
 ;~ ExitApp
 
@@ -77,10 +81,17 @@ liczbaRekorkowDoZrobienia := 25 ;Limit rekordów do wykonania - TESTY
 
 if versjaOficjalna ;Dopasownie zmiennych i początkowe czynności gdy versja oficjalna
 {
+	wylapujPowtorki = 1 ;Automatycznie pomija dane jeśli już wcześniej zostały przetworzone
+	blokada = 1 ;Wciśnięcie dowolnego klawisza zatrzymuje działanie programu
 	pasekPostepu = 1 ;Pastek postępu będzie widoczny
 	sprawdzeniePlikow = 1 ;Pliki źródłowe zostaną sprawdzone
 	przerobWszystkieReordy = 1 ;Pracuje na całości danych
-	WinClose, Portal Podatkowy - Internet Explorer ;Wymusza otwarcie IE na nowo. Zapezpieczenie na wypadek wygaśnięcia sesji
+	restartPrzegladarki = 1 ;Zamyka istniejącą kartę ze stroną do sprawdzania NIP
+}
+
+if restartPrzegladarki ;Wymusza otwarcie IE na nowo. Zapezpieczenie na wypadek wygaśnięcia sesji
+{
+	WinClose, Portal Podatkowy - Internet Explorer
 }
 
 if pasekPostepu ;Zainicjuj pasek postępu
@@ -151,13 +162,13 @@ if sprawdzeniePlikow ;Liczenie liczby linii w plikach WIP zamienić na funkcje
 
 	loop
 	{
-		FileReadLine, bezZnaczenia, vat_number.txt, %A_Index%
+		FileReadLine, numer, vat_number.txt, %A_Index%
 		If ErrorLevel = 1
 		{
 			vat_numberLiczbaLini := A_Index - 1
 			ErrorLevel := 0
 			break
-		}
+		}		
 	}
 	
 	if (nameLiczbaLini = vendorLiczbaLini) ;Porównanie liczby linii w różnych plikach
@@ -184,11 +195,16 @@ if przerobWszystkieReordy ;Pracuj na całości danych
 	liczbaRekorkowDoZrobienia := vat_numberLiczbaLini ;!!!WIP Na teraz przerabia wszystkie rekordy !!!
 }
 
-FileCreateDir, wyniki ;Tworzy folder na wyniki jeśli nie istnieje
-if ErrorLevel
+IfNotExist, %A_ScriptDir%\wyniki ;Tworzy folder na wyniki jeśli nie istnieje
 {
-	MsgBox, 16, Błąd, Nie udało się utworzyć folderu na wyniki
-	ExitApp
+	FileCreateDir, wyniki
+	if ErrorLevel
+	{
+		blokada = 0 ;Program nie będzie narzekał na kliknięcie klawiszy
+		Progress, Off ;Znika pasek postępu
+		MsgBox, 16, Błąd, Nie udało się utworzyć folderu na wyniki
+		ExitApp
+	}
 }
 
 ;Zmienne liczące dane
@@ -204,13 +220,13 @@ Loop
 {	
 	NIPNieWBazie := 0
 	
-	Sleep, 500 ;Opóźnienia, ponieważ program na pełnej prędkości potrafi działać dziwnie. Prawdopodobny powód - PDF creator! WIP
-	raportyRazem := poprawneRaporty + niePoprawneRaporty
+	;Sleep, 500 ;Opóźnienia, ponieważ program na pełnej prędkości potrafi działać dziwnie. Prawdopodobny powód - PDF creator! WIP
+	;~ raportyRazem := poprawneRaporty + niePoprawneRaporty
 	
-	if( Mod(raportyRazem, 5) = 0 AND (raportyRazem != 0) ) ;Co 5 wykonanych 25 sekundy pauzy
-		Sleep, 25000
-	if( Mod(raportyRazem, 50) = 0 AND (raportyRazem != 0) ) ;Co 50 wykonanych 65 sekun pauzy
-		Sleep, 40000
+	;~ if( Mod(raportyRazem, 5) = 0 AND (raportyRazem != 0) ) ;Co 5 wykonanych 25 sekundy pauzy
+		;~ Sleep, 25000
+	;~ if( Mod(raportyRazem, 50) = 0 AND (raportyRazem != 0) ) ;Co 50 wykonanych 65 sekun pauzy
+		;~ Sleep, 40000
 	
 	
 	if pasekPostepu ;Wyświetlenie paska postępu
@@ -249,13 +265,15 @@ Loop
 		continue
 	}
 	
-	IfExist, %A_ScriptDir%\wyniki\%nazwa%.pdf ;Wyłapuje powtórki. Pzechodzi wtedy do następnej wartości. Działa tylko dla poprawnych plików
+	if wylapujPowtorki ;Wyłapuje powtórki. Pzechodzi wtedy do następnej wartości. Działa tylko dla poprawnych plików
 	{
-		czytanaLinia := czytanaLinia + 1
-		powrorki := powrorki + 1
-		continue
+		IfExist, %A_ScriptDir%\wyniki\%nazwa%.png 
+		{
+			czytanaLinia := czytanaLinia + 1
+			powrorki := powrorki + 1
+			continue
+		}
 	}
-
 	
 	PoczatekSprawdzania:
 	IfWinExist, Portal Podatkowy - Internet Explorer ;Gdy przeglądarka nie jest włączona włącza ją
@@ -305,50 +323,11 @@ Loop
 		
 	}
 	
-	wb.Document.getElementById("caption2_b-5").Click() ;Klika guzik "drukuj"
-	
-	WinWait, Drukowanie, ,10 ;Czeka na okno wyboru drukarki !!!WIP po 10 sekundach zwraca błąd i zaczyna od początku sprawdzanie!!!
-	If ErrorLevel ;Jeśli się nie doczeka to zaczyna od początku
-	{
-		ErrorLevel = 0
-		goto, PoczatekSprawdzania
-	}
-	
-	Send, {Enter} ;!!!WIP Przed drukowaniem trzeba upewnić się, że drukuje na właściwej drukarce!!! Wybiera drukarkę taką jak poprzednio
-	WinWait, ahk_exe PDFCreator.exe
-	WinActivate, ahk_exe PDFCreator.exe
-	WinShow, ahk_exe PDFCreator.exe
-	Sleep, 900
-
-	;!!! Trzeba odznaczyć "After saving open output file"!!!! WIP Do testów: rozwiązanie, które zadziała gdy to pole jest zaznaczone
-
-	ControlClick, ThunderRT6TextBox6, ahk_exe PDFCreator.exe ;Wybiera polę na nazwę pliku
-	Sleep, 800
-	Send, ^a ;Zaznacza jego zawartość
-	Send, %nazwa% ;Wpisuje nazwę pliku
+	;Zapis jako zrzut ekranu
+	Progress, Off
+	Run, %A_ScriptDir%\nircmd\nircmd.exe savescreenshotwin `"%A_ScriptDir%\wyniki\%nazwa%.png`"
 	Sleep, 500
-	;ControlClick, ThunderRT6CommandButton7, ahk_exe PDFCreator.exe ;Zatwierdzenie wydruku
-	Send, {Enter} ;Zatwierdzenie wydruku
-
-	WinWait, Save as ;Okno zapisu pliku
-	WinActivate, Save as
-	WinShow, Save as
-	Sleep, 1000
-
-	SetWorkingDir %A_ScriptDir%\wyniki
-	RMApp_NavControlHandler(A_WorkingDir) ;Zmienia fodler do zapisu na /wyniki
-	SetWorkingDir %A_ScriptDir%
 	
-	Sleep, 3000
-	Send, {Enter} ;Zapis
-	
-	Sleep, 300
-	IfWinExist, Potwierdzanie zapisywania jako ;Wykrywanie czy plik o danej nazwie już istnieje. Jeśli  tak to go nadpisuje
-	{
-		Send, {Tab}
-		Sleep, 300
-		Send, {Enter}
-	}
 	if NIPNieWBazie
 		niePoprawneRaporty := niePoprawneRaporty + 1
 	else
@@ -360,9 +339,6 @@ Loop
 		Progress, b w250, %procenty%`%`n%czytanaLinia%`/%liczbaRekorkowDoZrobienia%, Postęp, Pasek postępu
 		Progress, %procenty%
 	}
-	
-	Sleep, 3000
-	
 	
 	czytanaLinia := czytanaLinia + 1
 }
@@ -468,190 +444,3 @@ Koniec()
 return
 }
 #If
-
-
-{ ;Zmiana adresu pliku w explorerze. Z internetu :D
-/* 
-Part of Radial menu codes posted by Learning one.
-http://www.autohotkey.com/board/topic/46856-radial-menu-scripts/
-http://ahkscript.org/boards/viewtopic.php?p=4673#p4673
-
-RM's Navigator is a drop down menu which helps you to easily navigate to folders that you often use. It navigates to your favorite folders in Windows explorer, My Computer, and in other standard Open, Save, Export, Import, Upload, Select dialog windows.
-*/
-
-RMApp_NavControlHandler(FolderPath, hwnd="", FocusedControl="") {
-	/*
-	RM executes this function after user selects item in Navigator menu, if it is a folder path, drive path or ShellSpecialFolderConstant.
-	All parameters are provided by RM.
-	Note that you can't always navigate to all ShellSpecialFolders. For example, you can't navigate to Control panel while you're in standard "Open File" dialog box window, but you can always navigate there while you're in Windows explorer.
-	
-	"FolderPath" can be folder path, drive path or ShellSpecialFolderConstant, for example: "C:\Program Files", "C:\", "10"
-	"hwnd" is handle to window, for example: "0xa03f0".
-	"FocusedControl" is control of the target window which has input focus, if any. Example: "Button2"
-
-	Some functions in use:
-	RMApp_IsControlVisible()		returns 1 if control is visible
-	RMApp_ControlSetTextR()			same as ControlSetText command, but a little bit more reliable
-	RMApp_ControlSetFocusR()		same as ControlSetFocus command, but a little bit more reliable
-	RMApp_Explorer_Navigate()		navigates to specified folder in Windows Explorer or MyComputer
-	*/
-	
-	RestoreInitText := 1						; turn on "restore control's initial text after navigating to specified folder" switch
-	hwnd := (hwnd="") ? WinExist("A") : hwnd	; if omitted, use active window
-	WinGetTitle, WinTitle, ahk_id %hwnd%		; get window's title
-	WinGetClass,WinClass, ahk_id %hwnd%			; get window's class
-	if (FocusedControl="")
-		ControlGetFocus, FocusedControl, ahk_id %hwnd%	; if not specified, get FocusedControl
-	
-	if FolderPath is integer
-		FolderPath := Round(FolderPath)		; for some strange reason, this has to be done although it looks like nonsense, otherwise try RMApp_Explorer_Navigate(FolderPath, hwnd) won't work properly if FolderPath if ShellSpecialFolderConstant
-
-	;=== If window is Windows Explorer or MyComputer ===
-	if WinClass in ExploreWClass,CabinetWClass
-	{
-		try RMApp_Explorer_Navigate(FolderPath, hwnd)
-		if (FocusedControl != "" and RMApp_IsControlVisible("ahk_id " hwnd, FocusedControl) = 1)
-			RMApp_ControlSetFocusR(FocusedControl, "ahk_id " hwnd)				; focus initialy focused control
-		return
-	}
-
-	;=== Other cases (not Windows Explorer or MyComputer) - first we'll decide to which control we will send FolderPath ===
-	if (WinClass = "#32770") {		;  dialog box class
-		if RMApp_IsControlVisible("ahk_id " hwnd, "Edit1")
-			Control := "Edit1"		; in standard dialog windows, "Edit1" control is the right choice
-		Else if RMApp_IsControlVisible("ahk_id " hwnd, "Edit2")
-			Control := "Edit2"		; but sometimes in MS office, if condition above fails, "Edit2" control is the right choice 
-		Else						; if above fails - just return and do nothing.
-			Return
-	}
-	Else if WinTitle contains Open,Save,Export,Import,Upload,Select	; this is the case in some MS office dialog windows, which are not #32770 class.
-	{
-		if RMApp_IsControlVisible("ahk_id " hwnd, "Edit1")
-			Control := "Edit1"			; if "Edit1" control exists, it is the right choice.
-		Else if RMApp_IsControlVisible("ahk_id " hwnd, "RichEdit20W2")
-			Control := "RichEdit20W2"	; some MS office dialogs don't have "Edit1" control, but they have "RichEdit20W2" control, which is then the right choice.
-		Else							; if above fails - just return and do nothing.
-			Return
-	}
-	Else {	; in all other cases, we'll explore FolderPath, and return from this function
-		ComObjCreate("Shell.Application").Explore(FolderPath)	; http://msdn.microsoft.com/en-us/library/windows/desktop/bb774073%28v=vs.85%29.aspx
-		Return
-	}
-
-	;=== Refine ShellSpecialFolderConstant ===
-	if FolderPath is integer
-	{
-		if (FolderPath = 17)			; My Computer --> 17 or 0x11
-			FolderPath := "::{20d04fe0-3aea-1069-a2d8-08002b30309d}"	; because you can't navigate to "17" but you can navigate to "::{20d04fe0-3aea-1069-a2d8-08002b30309d}"
-		else							; don't allow other ShellSpecialFolderConstants. For example - you can't navigate to Control panel while you're in standard "Open File" dialog box window.
-			return
-	}
-
-	/*
-	ShellSpecialFolderConstants:	http://msdn.microsoft.com/en-us/library/windows/desktop/bb774096%28v=vs.85%29.aspx
-	CSIDL:							http://msdn.microsoft.com/en-us/library/windows/desktop/bb762494%28v=vs.85%29.aspx
-	KNOWNFOLDERID:					http://msdn.microsoft.com/en-us/library/windows/desktop/dd378457%28v=vs.85%29.aspx
-	*/
-
-	
-	;===In this part (if we reached it), we'll send FolderPath to control and optionaly restore control's initial text after navigating to specified folder===	
-	if (RestoreInitText = 1)	; if we want to restore control's initial text after navigating to specified folder
-		ControlGetText, InitControlText, %Control%, ahk_id %hwnd%	; we'll get and store control's initial text first
-	
-	RMApp_ControlSetTextR(Control, FolderPath, "ahk_id " hwnd)	; set control's text to FolderPath
-	RMApp_ControlSetFocusR(Control, "ahk_id " hwnd)				; focus control
-	if (WinExist("A") != hwnd)			; in case that some window just popped out, and initialy active window lost focus
-		WinActivate, ahk_id %hwnd%		; we'll activate initialy active window
-	
-	;=== Avoid accidental hotkey & hotstring triggereing while doing SendInput - can be done simply by #UseHook, but do it if user doesn't have #UseHook in the script ===
-	If (A_IsSuspended = 1)
-		WasSuspended := 1
-	if (WasSuspended != 1)
-		Suspend, On
-	SendInput, {End}{Space}{Backspace}{enter}	; silly but necessary part - go to end of control, send dummy space, delete it, and then send enter
-	if (WasSuspended != 1)
-		Suspend, Off
-
-	/*
-	Question: Why not use ControlSetText, and then send enter to control via ControlSend, %Control%, {enter}, ahk_id %hwnd% ?
-	Because in some "Save as"  dialogs in some programs, this causes auto saving file instead of navigating to specified folder! After a lot of testing, I concluded that most reliable method, which works and prevents this, is the one that looks weird & silly; after setting text via ControlSetText, control must be focused, then some dummy text must be sent to it via SendInput (in this case space, and then backspace which deletes it), and then enter, which causes navigation to specified folder.
-	Question: Ok, but is "SendInput, {End}{Space}{Backspace}{enter}" really necessary? Isn't "SendInput, {enter}" sufficient?
-	No. Sending "{End}{Space}{Backspace}{enter}" is definitely more reliable then just "{enter}". Sounds silly but tests showed that it's true.
-	*/
-	
-	if (RestoreInitText = 1) {	; if we want to restore control's initial text after we navigated to specified folder
-		Sleep, 70				; give some time to control after sending {enter} to it
-		ControlGetText, ControlTextAfterNavigation, %Control%, ahk_id %hwnd%	; sometimes controls automatically restore their initial text
-		if (ControlTextAfterNavigation != InitControlText)						; if not
-			RMApp_ControlSetTextR(Control, InitControlText, "ahk_id " hwnd)		; we'll set control's text to its initial text
-	}
-	if (WinExist("A") != hwnd)	; sometimes initialy active window loses focus, so we'll activate it again
-		WinActivate, ahk_id %hwnd%
-	
-	if (FocusedControl != "" and RMApp_IsControlVisible("ahk_id " hwnd, FocusedControl) = 1)
-		RMApp_ControlSetFocusR(FocusedControl, "ahk_id " hwnd)				; focus initialy focused control
-	
-	
-	/*
-	;==Old method which looks more proper, but is definitely less reliable==
-	if RestoreInitText
-		ControlGetText, InitControlText, %Control%, ahk_id %hwnd%
-	RMApp_ControlSetTextR(Control, FolderPath, "ahk_id " hwnd)
-	Sleep, 60
-	ControlSend, %Control%, {enter}, ahk_id %hwnd%
-	Sleep, 60
-	if RestoreInitText
-		RMApp_ControlSetTextR(Control, InitControlText, "ahk_id " hwnd)
-	if (WinExist("A") != hwnd)
-		WinActivate, ahk_id %hwnd%
-	*/
-}
-
-RMApp_Explorer_Navigate(FullPath, hwnd="") {  ; by Learning one
-	; http://ahkscript.org/boards/viewtopic.php?p=4568#p4568
-	; http://msdn.microsoft.com/en-us/library/windows/desktop/bb774096%28v=vs.85%29.aspx
-	; http://msdn.microsoft.com/en-us/library/aa752094
-	hwnd := (hwnd="") ? WinExist("A") : hwnd ; if omitted, use active window
-	WinGet, ProcessName, ProcessName, % "ahk_id " hwnd
-	if (ProcessName != "explorer.exe")  ; not Windows explorer
-		return
-	For pExp in ComObjCreate("Shell.Application").Windows
-	{
-		if (pExp.hwnd = hwnd) { ; matching window found
-			if FullPath is integer	; ShellSpecialFolderConstant
-				pExp.Navigate2(FullPath)
-			else
-				pExp.Navigate("file:///" FullPath)
-			return
-		}
-	}
-}
-
-RMApp_IsControlVisible(WinTitle,ControlClass) {	; used in Navigator
-	ControlGet, IsControlVisible, Visible,, %ControlClass%, %WinTitle%
-	return IsControlVisible
-}
-
-RMApp_ControlSetFocusR(Control, WinTitle="", Tries=3) {	; used in Navigator. More reliable ControlSetFocus
-	Loop, %Tries%
-	{
-		ControlFocus, %Control%, %WinTitle%				; focus control
-		Sleep, 50
-		ControlGetFocus, FocusedControl, %WinTitle%		; check
-		if (FocusedControl = Control)					; if OK
-			return 1
-	}
-}
-
-RMApp_ControlSetTextR(Control, NewText="", WinTitle="", Tries=3) {	; used in Navigator. More reliable ControlSetText
-	Loop, %Tries%
-	{
-		ControlSetText, %Control%, %NewText%, %WinTitle%			; set
-		Sleep, 50
-		ControlGetText, CurControlText, %Control%, %WinTitle%		; check
-		if (CurControlText = NewText)								; if OK
-			return 1
-	}
-}
-}
-
