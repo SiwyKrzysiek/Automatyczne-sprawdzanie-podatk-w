@@ -68,13 +68,15 @@ global sprawdzeniePlikow = 1 ;Czy poprawność danych ma być sprawdzona
 global restartPrzegladarki = 1 ;Czy ma wymuszać otwarcie nowej instancji explorera
 global wylapujPowtorki = 0 ;Czy ma pomijać rekordy, jeżeli odpowiednie wyniki już istnieją
 
-liczbaRekorkowDoZrobienia = 50 ;Limit rekordów do wykonania - TESTY
+liczbaRekorkowDoZrobienia = 20 ;Limit rekordów do wykonania - TESTY
 
 ;POLE TESTÓW
 
-;~ IfExist, %A_ScriptDir%\vat_number.*
-	;~ MsgBox, Jest OK
-;~ ExitApp
+;~ UrlDownloadToFile, https://autohotkey.com/download/1.1/version.txt, C:\AutoHotkey Latest Version.txt
+;~ URLDownloadToFile, http://www.nirsoft.net/utils/nircmd.zip, "C:\Users\kdi011\Documents\Programowanie\Automatyczne sprawdzanie podatków" nircmd.zip
+;~ Run, bitsadmin  /transfer mydownloadjob  /download  /priority normal https://autohotkey.com/download/1.1/version.txt  C:\Users\kdi011\Downloads\test.txt
+
+ExitApp
 
 
 ;KONIEC POLA TESTÓW
@@ -207,13 +209,21 @@ IfNotExist, %A_ScriptDir%\wyniki ;Tworzy folder na wyniki jeśli nie istnieje
 	}
 }
 
+IfNotExist, %A_ScriptDir%\nircmd\nircmd.exe ;Gdy nie ma programu do zrzutó ekranu to o tym powiadomi
+{
+	Progress, Off
+	blokada = 0
+	
+	MsgBox, 262160, Błąd, Brakuje programu do robienia zrzutów ekranu!`n`nProgram nircmd.exe powinien być w folderze nircmd w tym samym miejscu co główny program. Jeśli go braku należy ponownie wypakować paczkę z głównym programem lub pobrać nircmd.exe ze strony: http://www.nirsoft.net/utils/nircmd.zip i wypakować w folderze z głównym programem.
+	ExitApp
+}
+
 ;Zmienne liczące dane
 poprawneRaporty := 0 ;Gdy wynik jest standardowy
 niePoprawneRaporty := 0 ;Gdy odpowiedź strony jest różna niż standardowa
 powrorki := 0 ;Gdy danyc wynik był już utworzony wcześniej
 bledneNIP := 0 ;Gdy numer NIP ma błędną sumę kontrolną
 procenty := 0 ;Ile % rekordów zostało już przerobionych
-
 
 czytanaLinia := 1 ;Ktróra linia plików jest aktualnie przerabiana
 Loop
