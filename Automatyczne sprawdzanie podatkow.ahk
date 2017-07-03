@@ -5,7 +5,7 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 
 #SingleInstance Force
 
-PoliczLiniePliku(plik)
+PoliczLiniePliku(plik) ;Liczy liczbę lini w pliku
 {
 	Loop, Read, %plik%
 		ostatniaLinia++
@@ -90,7 +90,7 @@ if A_IsCompiled ;Gdy skrypt jest skompilowany to zawsze jest wersją oficjalną
 
 ;Następne zmienne są nadpisywane gdy wersja oficjalna = 1!
 global blokada = 1 ;Czy wciśnięcie klawisza na klawiaturze ma przerywać program
-global pasekPostepu = 0 ;Czy ma być wyświetlany pasek postępu
+global pasekPostepu = 1 ;Czy ma być wyświetlany pasek postępu
 global przerobWszystkieReordy = 0 ;Czy ma pracować na wszystkich rekordach. Gdy 0 używa liczby rekordów z liczbaRekorkowDoZrobienia
 global sprawdzeniePlikow = 1 ;Czy poprawność danych ma być sprawdzona
 global restartPrzegladarki = 0 ;Czy ma wymuszać otwarcie nowej instancji explorera
@@ -166,7 +166,7 @@ if((dane[1] = 0) or (dane[2] = 0) or (dane[3] = 0)) ;Jeśli nie istnieją to je 
 }
 }
 
-if sprawdzeniePlikow ;Liczenie liczby linii w plikach WIP zamienić na funkcje
+if sprawdzeniePlikow ;Liczenie liczby linii w plikach
 { 
 	nameLiczbaLini := PoliczLiniePliku("name.txt")
 	vendorLiczbaLini := PoliczLiniePliku("vendor.txt")
@@ -252,6 +252,9 @@ IfNotExist, %A_ScriptDir%\nircmd\nircmd.exe ;Gdy nie ma programu do zrzutów ekr
 	ExitApp
 }
 
+
+	
+
 ;Zmienne liczące dane
 poprawneRaporty := 0 ;Gdy wynik jest standardowy
 niePoprawneRaporty := 0 ;Gdy odpowiedź strony jest różna niż standardowa
@@ -291,7 +294,7 @@ Loop
 	{
 		blokada = 0 ;Program nie będzie narzekał na kliknięcie klawiszy
 		Progress, Off ;Znika pasek postępu
-		MsgBox, 16, Błąd, Błąd w trakcie wczytywania danych ;!!! WIP Przetestować jak zachowuje się gdy na końcu pliku jest pusta linia
+		MsgBox, 16, Błąd, Błąd w trakcie wczytywania danych
 		ExitApp
 	}
 
@@ -311,11 +314,20 @@ Loop
 			powrorki := powrorki + 1
 			continue
 		}
+		IfExist, %A_ScriptDir%\wyniki\nie poprawne\BŁĘDNY NIP! %nazwa%.txt ;Dla NIP-ów ze złą sumą kntrolną
+		{
+			czytanaLinia := czytanaLinia + 1
+			powrorki := powrorki + 1
+			continue
+		}
 	}
 	
 	if (!SprawdzNIP(vatNo)) ;Sprawdza czy dany numer NIP jest poprawny
 	{
-		FileAppend,%vatNo%`n ,%A_ScriptDir%\wyniki\BŁĘDNY NIP! %nazwa%.txt ;Jeśli nie jest poprawny to tworzy plik z informacją. WIP Nie dopisywanie do istniejącego pliku jeśli już istnieje
+		nazwa := "BŁĘDNY NIP! " . nazwa
+		
+		FileOpen(A_ScriptDir . "\wyniki\nie poprawne\" . nazwa ".txt", "w").Write(vatNo . "`r`n").Close ;Jeśli nie jest poprawny to tworzy plik z informacją
+		
 		bledneNIP := bledneNIP + 1
 		czytanaLinia := czytanaLinia + 1
 		continue
