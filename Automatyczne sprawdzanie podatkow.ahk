@@ -5,6 +5,14 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 
 #SingleInstance Force
 
+PoliczLiniePliku(plik)
+{
+	Loop, Read, %plik%
+		ostatniaLinia++
+	
+	return ostatniaLinia
+}
+
 Potega(liczba, wykladnik) ;Potęguję daną liczbę do naturalnej potęgi
 {
 	wynik := 1
@@ -160,38 +168,9 @@ if((dane[1] = 0) or (dane[2] = 0) or (dane[3] = 0)) ;Jeśli nie istnieją to je 
 
 if sprawdzeniePlikow ;Liczenie liczby linii w plikach WIP zamienić na funkcje
 { 
-	loop
-	{
-		FileReadLine, bezZnaczenia, name.txt, %A_Index%
-		If ErrorLevel = 1
-		{
-			nameLiczbaLini := A_Index - 1
-			ErrorLevel := 0
-			break
-		}
-	}
-
-	loop
-	{
-		FileReadLine, bezZnaczenia, vendor.txt, %A_Index%
-		If ErrorLevel = 1
-		{
-			vendorLiczbaLini := A_Index - 1
-			ErrorLevel := 0
-			break
-		}
-	}
-
-	loop
-	{
-		FileReadLine, numer, vat_number.txt, %A_Index%
-		If ErrorLevel = 1
-		{
-			vat_numberLiczbaLini := A_Index - 1
-			ErrorLevel := 0
-			break
-		}		
-	}
+	nameLiczbaLini := PoliczLiniePliku("name.txt")
+	vendorLiczbaLini := PoliczLiniePliku("vendor.txt")
+	vat_numberLiczbaLini := PoliczLiniePliku("vat_number.txt")
 	
 	if (nameLiczbaLini = vendorLiczbaLini) ;Porównanie liczby linii w różnych plikach
 	{
@@ -217,11 +196,14 @@ if przerobWszystkieReordy ;Pracuj na całości danych
 	liczbaRekorkowDoZrobienia := vat_numberLiczbaLini ;Przerabia wszystkie rekordy
 }
 
-{ ;Tworzenie folderó na wyniki
+{ ;Tworzenie folderów na wyniki
 IfNotExist, `"%A_ScriptDir%\wyniki`" ;Tworzy folder na wyniki jeśli nie istnieje
 {
-	FileCreateDir, wyniki
-	if ErrorLevel
+	try
+	{
+		FileCreateDir, wyniki
+	}
+	catch ;Gdyby wystąpił błąd
 	{
 		blokada = 0 ;Program nie będzie narzekał na kliknięcie klawiszy
 		Progress, Off ;Znika pasek postępu
@@ -232,8 +214,11 @@ IfNotExist, `"%A_ScriptDir%\wyniki`" ;Tworzy folder na wyniki jeśli nie istniej
 
 IfNotExist, `"%A_ScriptDir%\wyniki\poprawne`" ;Tworzy folder na poprawne wyniki jeśli nie istnieje
 {
-	FileCreateDir, %A_ScriptDir%\wyniki\poprawne
-	if ErrorLevel
+	try
+	{
+		FileCreateDir, %A_ScriptDir%\wyniki\poprawne
+	}
+	catch ;Gdyby wystąpił błąd
 	{
 		blokada = 0 ;Program nie będzie narzekał na kliknięcie klawiszy
 		Progress, Off ;Znika pasek postępu
@@ -244,8 +229,11 @@ IfNotExist, `"%A_ScriptDir%\wyniki\poprawne`" ;Tworzy folder na poprawne wyniki 
 
 IfNotExist, `"%A_ScriptDir%\wyniki\nie poprawne`" ;Tworzy folder na nie poprawne wyniki jeśli nie istnieje
 {
-	FileCreateDir, %A_ScriptDir%\wyniki\nie poprawne
-	if ErrorLevel
+	try
+	{
+		FileCreateDir, %A_ScriptDir%\wyniki\nie poprawne
+	}
+	catch ;Gdyby wystąpił błąd
 	{
 		blokada = 0 ;Program nie będzie narzekał na kliknięcie klawiszy
 		Progress, Off ;Znika pasek postępu
