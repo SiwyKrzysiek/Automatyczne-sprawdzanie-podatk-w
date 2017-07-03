@@ -7,6 +7,8 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 
 PoliczLiniePliku(plik) ;Liczy liczbę lini w pliku
 {
+	ostatniaLinia = 0
+	
 	Loop, Read, %plik%
 		ostatniaLinia++
 	
@@ -19,7 +21,7 @@ Potega(liczba, wykladnik) ;Potęguję daną liczbę do naturalnej potęgi
 	
 	Loop %wykladnik%
 	{
-		wynik := wynik * liczba
+		wynik *= liczba
 	}
 	
 	return wynik
@@ -65,7 +67,7 @@ SprawdzNIP(nip) ;Oblicza sumę kontrolną NIP. Zwraca 1 gdy poprawna i 0 gdy nie
 	if (StrLen(nip) != 10) ;Gdyby NIP nie miał 10 cyfr to na pewno jest nie prawidłowy
 		return 0
 	
-	cyfryNIP := Object()
+	cyfryNIP := Object() ;Tworzy tablicę asocajacyjną
 	Loop, 10 ;Dzieli NIP na cyfry
 	{
 		cyfryNIP.Insert(Mod(Floor(nip / Potega(10, (10 - a_index))),10))
@@ -75,7 +77,7 @@ SprawdzNIP(nip) ;Oblicza sumę kontrolną NIP. Zwraca 1 gdy poprawna i 0 gdy nie
 	wagi := [6, 5, 7, 2, 3, 4, 5, 6, 7]
 	Loop, 9 ;Oblicza sumę kontroną mnożąc cyfry przzez odpowiedznie wagi
 	{
-		suma := suma + (cyfryNIP[a_index] * wagi[a_index])
+		suma += (cyfryNIP[a_index] * wagi[a_index])
 	}
 		
 	if (Mod(suma, 11) = cyfryNIP[10]) ;Sprawdzenei czy (suma cyfr * wagi) mod 11 = ostatnia cyfra
@@ -95,8 +97,10 @@ global przerobWszystkieReordy = 0 ;Czy ma pracować na wszystkich rekordach. Gdy
 global sprawdzeniePlikow = 1 ;Czy poprawność danych ma być sprawdzona
 global restartPrzegladarki = 0 ;Czy ma wymuszać otwarcie nowej instancji explorera
 global wylapujPowtorki = 1 ;Czy ma pomijać rekordy, jeżeli odpowiednie wyniki już istnieją
+global NIPZamiastVendor = 0 ;Czy zastąpić numer Vendor numerem NIP podczas nazywania plików
 
 liczbaRekorkowDoZrobienia = 20 ;Limit rekordów do wykonania - TESTY
+
 
 ;POLE TESTÓW
 
@@ -117,6 +121,7 @@ if versjaOficjalna ;Dopasownie zmiennych i początkowe czynności gdy versja ofi
 	sprawdzeniePlikow = 1 ;Pliki źródłowe zostaną sprawdzone
 	przerobWszystkieReordy = 1 ;Pracuje na całości danych
 	restartPrzegladarki = 1 ;Zamyka istniejącą kartę ze stroną do sprawdzania NIP
+	NIPZamiastVendor = 0 ;Nie zastępuje numeru Vendor numerem NIP chyba, że jest to konieczne
 }
 
 if restartPrzegladarki ;Wymusza otwarcie IE na nowo. Zapezpieczenie na wypadek wygaśnięcia sesji
@@ -172,9 +177,26 @@ if sprawdzeniePlikow ;Liczenie liczby linii w plikach
 	vendorLiczbaLini := PoliczLiniePliku("vendor.txt")
 	vat_numberLiczbaLini := PoliczLiniePliku("vat_number.txt")
 	
-	if (nameLiczbaLini = vendorLiczbaLini) ;Porównanie liczby linii w różnych plikach
+	if (nameLiczbaLini = vat_numberLiczbaLini) ;Porównanie liczby linii w różnych plikach
 	{
-		if (nameLiczbaLini != vat_numberLiczbaLini)
+		if ((vendorLiczbaLini = 0) AND (nameLiczbaLini != 0))
+		{
+			blokada = 0
+			Progress, Off
+			MsgBox, 262180, Niepełne dane, Brakuje numerów vendor w plikach z danymi.`nCzy zamiast nich użyć numerów NIP do nazywania plików?
+			IfMsgBox, Yes
+			{
+				blokada = 1
+				NIPZamiastVendor = 1
+			}
+			IfMsgBox, No
+			{
+				MsgBox, 16, Błąd, Liczba lini w plikach z danymi jest różna! Należy sprawdzić dane`n`nMoże to być spowodowane pustą linią na końcu któregoś z plików
+			ExitApp
+			}
+			
+		}
+		else if (nameLiczbaLini != vendorLiczbaLini)
 		{
 			blokada = 0
 			Progress, Off
@@ -286,8 +308,9 @@ Loop
 	
 	try ;Czytanie plików
 	{
+		if !NIPZamiastVendor
+			FileReadLine, vendor, vendor.txt, %czytanaLinia%
 		FileReadLine, firmName, name.txt, %czytanaLinia%
-		FileReadLine, vendor, vendor.txt, %czytanaLinia%
 		FileReadLine, vatNo, vat_number.txt, %czytanaLinia%
 	}
 	catch ;Gdyby był błąd w trakcie czytania
@@ -298,7 +321,10 @@ Loop
 		ExitApp
 	}
 
-	nazwa = %vendor% %firmName% ;Utowrzenie nazwy do podpisywania wyników
+	if NIPZamiastVendor
+		nazwa := vatNo . " " . firmName ;Utowrzenie nazwy do podpisywania wyników w przypaku gdy zostanie wybrana opcja pracy bez numeru Vendor
+	else
+		nazwa := vendor . " " . firmName ;Utowrzenie nazwy do podpisywania wyników
 	
 	if wylapujPowtorki ;Wyłapuje powtórki. Pzechodzi wtedy do następnej wartości.
 	{
