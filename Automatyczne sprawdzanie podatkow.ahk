@@ -108,6 +108,7 @@ liczbaRekorkowDoZrobienia = 20 ;Limit rekordów do wykonania - TESTY
 
 ;~ MsgBox, % Potega(2, 6)
 
+
 ;~ ExitApp
 
 
@@ -275,8 +276,6 @@ IfNotExist, %A_ScriptDir%\nircmd\nircmd.exe ;Gdy nie ma programu do zrzutów ekr
 }
 
 
-	
-
 ;Zmienne liczące dane
 poprawneRaporty := 0 ;Gdy wynik jest standardowy
 niePoprawneRaporty := 0 ;Gdy odpowiedź strony jest różna niż standardowa
@@ -287,6 +286,17 @@ procenty := 0 ;Ile % rekordów zostało już przerobionych
 czytanaLinia := 1 ;Ktróra linia plików jest aktualnie przerabiana
 Loop
 {	
+	;Porusza myszką w tę i z powrotem by komputer nie poszedł spać
+	LastX := CurrentX
+    LastY := CurrentY
+    MouseGetPos, CurrentX, CurrentY
+    If (CurrentX = LastX and CurrentY = LastY) {
+        MouseMove, 1, 1, , R
+        Sleep, 100
+        MouseMove, -1, -1, , R
+    }
+	
+	
 	NIPNieWBazie := 0
 	
 	
@@ -321,6 +331,7 @@ Loop
 		ExitApp
 	}
 
+	;Zmienna do nazywania plików
 	if NIPZamiastVendor
 		nazwa := vatNo . " " . firmName ;Utowrzenie nazwy do podpisywania wyników w przypaku gdy zostanie wybrana opcja pracy bez numeru Vendor
 	else
