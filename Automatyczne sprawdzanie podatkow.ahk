@@ -89,13 +89,19 @@ Koniec()		;Funkcja wywoływana gdy użytkownik naciśnie jakiś klawisz na klawi
 	return
 }
 
-SprawdzNIP(nip) ;Oblicza sumę kontrolną NIP. Zwraca 1 gdy poprawna i 0 gdy nie poprawna
+SprawdzNIP(nip, ByRef wiadomosc = "") ;Oblicza sumę kontrolną NIP. Zwraca 1 gdy poprawna i 0 gdy nie poprawna
 {	
 	if nip is not integer ;Gdyby NIP zawierał litery
+	{
+		wiadomosc := "NIP nie jest liczbą!"
 		return 0
+	}
 	
 	if (StrLen(nip) != 10) ;Gdyby NIP nie miał 10 cyfr to na pewno jest nie prawidłowy
+	{
+		wiadomosc := "Nieprawidłowa długość NIP-u!"
 		return 0
+	}
 	
 	cyfryNIP := Object() ;Tworzy tablicę asocajacyjną
 	Loop, 10 ;Dzieli NIP na cyfry
@@ -113,7 +119,11 @@ SprawdzNIP(nip) ;Oblicza sumę kontrolną NIP. Zwraca 1 gdy poprawna i 0 gdy nie
 	if (Mod(suma, 11) = cyfryNIP[10]) ;Sprawdzenei czy (suma cyfr * wagi) mod 11 = ostatnia cyfra
 		return 1
 	else
+	{
+		wiadomosc := "Nieprawidłowa suma kontrolna!"
 		return 0
+	}
+		
 }
 
 global versjaOficjalna = 0 ;Czy ma pracować jako wersja oficjalna - 1, czy jako wersja do testów - 0
@@ -129,7 +139,7 @@ global restartPrzegladarki = 0 ;Czy ma wymuszać otwarcie nowej instancji explor
 global wylapujPowtorki = 0 ;Czy ma pomijać rekordy, jeżeli odpowiednie wyniki już istnieją
 global NIPZamiastVendor = 0 ;Czy zastąpić numer Vendor numerem NIP podczas nazywania plików
 
-liczbaRekorkowDoZrobienia = 10 ;Limit rekordów do wykonania - TESTY
+liczbaRekorkowDoZrobienia = 1 ;Limit rekordów do wykonania - TESTY
 
 
 ;POLE TESTÓW
@@ -387,11 +397,11 @@ Loop
 		}
 	}
 	
-	if (!SprawdzNIP(vatNo)) ;Sprawdza czy dany numer NIP jest poprawny
+	if (!SprawdzNIP(vatNo, blad)) ;Sprawdza czy dany numer NIP jest poprawny
 	{
 		nazwa := "BŁĘDNY NIP! " . nazwa
 		
-		FileOpen(A_ScriptDir . "\wyniki\nie poprawne\" . nazwa ".txt", "w").Write(vatNo . "`r`n").Close ;Jeśli nie jest poprawny to tworzy plik z informacją
+		FileOpen(A_ScriptDir . "\wyniki\nie poprawne\" . nazwa ".txt", "w").Write(vatNo . "`r`n" . blad).Close ;Jeśli nie jest poprawny to tworzy plik z informacją
 		
 		bledneNIP := bledneNIP + 1
 		czytanaLinia := czytanaLinia + 1
