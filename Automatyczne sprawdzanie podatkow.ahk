@@ -64,6 +64,9 @@ Koniec()		;Funkcja wywoływana gdy użytkownik naciśnie jakiś klawisz na klawi
 
 SprawdzNIP(nip) ;Oblicza sumę kontrolną NIP. Zwraca 1 gdy poprawna i 0 gdy nie poprawna
 {	
+	if nip is not integer ;Gdyby NIP zawierał litery
+		return 0
+	
 	if (StrLen(nip) != 10) ;Gdyby NIP nie miał 10 cyfr to na pewno jest nie prawidłowy
 		return 0
 	
@@ -92,14 +95,14 @@ if A_IsCompiled ;Gdy skrypt jest skompilowany to zawsze jest wersją oficjalną
 
 ;Następne zmienne są nadpisywane gdy wersja oficjalna = 1!
 global blokada = 1 ;Czy wciśnięcie klawisza na klawiaturze ma przerywać program
-global pasekPostepu = 1 ;Czy ma być wyświetlany pasek postępu
+global pasekPostepu = 0 ;Czy ma być wyświetlany pasek postępu
 global przerobWszystkieReordy = 0 ;Czy ma pracować na wszystkich rekordach. Gdy 0 używa liczby rekordów z liczbaRekorkowDoZrobienia
 global sprawdzeniePlikow = 1 ;Czy poprawność danych ma być sprawdzona
 global restartPrzegladarki = 0 ;Czy ma wymuszać otwarcie nowej instancji explorera
-global wylapujPowtorki = 1 ;Czy ma pomijać rekordy, jeżeli odpowiednie wyniki już istnieją
+global wylapujPowtorki = 0 ;Czy ma pomijać rekordy, jeżeli odpowiednie wyniki już istnieją
 global NIPZamiastVendor = 0 ;Czy zastąpić numer Vendor numerem NIP podczas nazywania plików
 
-liczbaRekorkowDoZrobienia = 20 ;Limit rekordów do wykonania - TESTY
+liczbaRekorkowDoZrobienia = 10 ;Limit rekordów do wykonania - TESTY
 
 
 ;POLE TESTÓW
