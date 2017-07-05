@@ -5,6 +5,21 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 
 #SingleInstance Force
 
+DopasujNIP(nip) ;Usuwa lietery kraju i myśliniki z NIP-u
+{
+	IfInString, nip, -
+		{
+			StringReplace, nip, nip, -, , All
+		}
+		
+		if (StrLen(nip) = 12) ;Odciencie znaków kraju
+		{
+			StringTrimLeft, nip, nip, 2
+		}
+		
+	return nip
+}
+
 ZapobiegajUspieniu() ;Porusza myszką w tę i z powrotem by komputer nie poszedł spać
 {
 	LastX := CurrentX
@@ -330,6 +345,8 @@ Loop
 			FileReadLine, vendor, vendor.txt, %czytanaLinia%
 		FileReadLine, firmName, name.txt, %czytanaLinia%
 		FileReadLine, vatNo, vat_number.txt, %czytanaLinia%
+		
+		vatNo := DopasujNIP(vatNo) ;Dopasowywyje NIP tak by dało się go wprowadzić na stronę od sprawdzana
 	}
 	catch ;Gdyby był błąd w trakcie czytania
 	{
