@@ -5,6 +5,18 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 
 #SingleInstance Force
 
+ZapobiegajUspieniu() ;Porusza myszką w tę i z powrotem by komputer nie poszedł spać
+{
+	LastX := CurrentX
+	LastY := CurrentY
+	MouseGetPos, CurrentX, CurrentY
+	If (CurrentX = LastX and CurrentY = LastY) {
+		MouseMove, 1, 1, , R
+		Sleep, 100
+		MouseMove, -1, -1, , R
+	}
+}
+
 PoliczLiniePliku(plik) ;Liczy liczbę lini w pliku
 {
 	ostatniaLinia = 0
@@ -108,8 +120,6 @@ liczbaRekorkowDoZrobienia = 10 ;Limit rekordów do wykonania - TESTY
 ;POLE TESTÓW
 
 ;MsgBox, % ComObjCreate("Scripting.FileSystemObject").GetFolder((A_ScriptDir . "\wyniki\poprawne")).Files.Count ;!!! Liczy ile jest plików w folderze. Może się przydać do kontroli czy prpgram działa prawidłowo
-
-;~ MsgBox, % Potega(2, 6)
 
 
 ;~ ExitApp
@@ -284,24 +294,17 @@ poprawneRaporty := 0 ;Gdy wynik jest standardowy
 niePoprawneRaporty := 0 ;Gdy odpowiedź strony jest różna niż standardowa
 powrorki := 0 ;Gdy danyc wynik był już utworzony wcześniej
 bledneNIP := 0 ;Gdy numer NIP ma błędną sumę kontrolną
+poprawneRaportyPowtorki := 0
+niePoprawneRaportyPowtorki := 0
+bledneNIPPowtorki :=0
 procenty := 0 ;Ile % rekordów zostało już przerobionych
 
 czytanaLinia := 1 ;Ktróra linia plików jest aktualnie przerabiana
 Loop
 {	
-	;Porusza myszką w tę i z powrotem by komputer nie poszedł spać
-	LastX := CurrentX
-    LastY := CurrentY
-    MouseGetPos, CurrentX, CurrentY
-    If (CurrentX = LastX and CurrentY = LastY) {
-        MouseMove, 1, 1, , R
-        Sleep, 100
-        MouseMove, -1, -1, , R
-    }
-	
-	
 	NIPNieWBazie := 0
 	
+	ZapobiegajUspieniu() ;Przeciwdziała przejściu komputera w tryb uśpienia
 	
 	if pasekPostepu ;Wyświetlenie paska postępu
 	{
@@ -315,7 +318,9 @@ Loop
 		temp := czytanaLinia - 1 ;Zmienna tymczasowa
 		blokada = 0 ;Program nie będzie narzekał na kliknięcie klawiszy
 		Progress, Off ;Znika pasek postępu
-		MsgBox, 0, Gotowe, Praca skończona`nLiczba wykonancyh działań: %temp%`n`nLiczba poprawnych: %poprawneRaporty%`nLiczba nie będących w bazie: %niePoprawneRaporty%`nLiczba błędnych numerów NIP: %bledneNIP%`nLiczba już istniejących: %powrorki%
+		MsgBox, 64, Gotowe, Praca skończona`nLiczba wykonancyh działań: %temp%`n`nAktualne odpalenie`nLiczba poprawnych: %poprawneRaporty%`nLiczba nie będących w bazie: %niePoprawneRaporty%`nLiczba błędnych numerów NIP: %bledneNIP%`n`nJuż istniejące`nLiczba poprawnych: %poprawneRaportyPowtorki%`nLiczba nie będących w bazie: %niePoprawneRaportyPowtorki%`nLiczba błędnych numerów NIP: %bledneNIPPowtorki%
+		
+		
 		ExitApp
 	}
 	
@@ -344,20 +349,23 @@ Loop
 	{
 		IfExist, %A_ScriptDir%\wyniki\poprawne\%nazwa%.png ;Dla poprawncyh
 		{
-			czytanaLinia := czytanaLinia + 1
-			powrorki := powrorki + 1
+			czytanaLinia++
+			powrorki++
+			poprawneRaportyPowtorki++
 			continue
 		}
 		IfExist, %A_ScriptDir%\wyniki\nie poprawne\NIE POPRAWNY %nazwa%.png ;Dla nie poprawnych
 		{
-			czytanaLinia := czytanaLinia + 1
-			powrorki := powrorki + 1
+			czytanaLinia++
+			powrorki++
+			niePoprawneRaportyPowtorki++
 			continue
 		}
 		IfExist, %A_ScriptDir%\wyniki\nie poprawne\BŁĘDNY NIP! %nazwa%.txt ;Dla NIP-ów ze złą sumą kntrolną
 		{
-			czytanaLinia := czytanaLinia + 1
-			powrorki := powrorki + 1
+			czytanaLinia++
+			powrorki++
+			bledneNIPPowtorki++
 			continue
 		}
 	}
@@ -445,7 +453,7 @@ Loop
 		Progress, %procenty%
 	}
 	
-	czytanaLinia := czytanaLinia + 1
+	czytanaLinia++
 }
 
 #If blokada ;Kontrola user input
